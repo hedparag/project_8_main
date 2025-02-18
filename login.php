@@ -1,23 +1,69 @@
 <?php
 session_start();
-// include 'config.php'; // Ensure the connection is available
+require_once('./include/config.php');
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = $_POST['employee_email'];
-    $password = $_POST['password']; 
+    $username = trim($_POST['user_name']);
+    $password = trim($_POST['password']); 
 
-    // Use pg_query_params for security
-    $query = "SELECT * FROM users WHERE employee_email = $1 AND password = $2";
-    $result = pg_query_params($conn, $query, [$email, $password]);
-
-    if ($result && pg_num_rows($result) > 0) {
-        $_SESSION['user'] = pg_fetch_assoc($result);
-        header("Location: dashboard.php");
+    if(empty($username)||empty($password)){
+        $_SESSION['error']="Both fields are required";
+        header("Location:login.php");
         exit();
-    } else {
-        echo "Invalid email or password.";
     }
+    // Use pg_query_params for security
+    $query = "SELECT user_id,user_name,password,user_type_id FROM users WHERE user_name = '$username' AND status = 't'";
+    $result = pg_query($conn,$query);
+
+    $user = pg_fetch_assoc($result);
+    // echo '<pre>';
+    // print_r($user);
+    // echo '</pre>';
+    // die;
+    // echo $user['password'];
+    //echo password_hash($password,PASSWORD_DEFAULT);
+    
+    if(count($user)>0){
+    
+
+
+
+    // $plain_password = "admin123"; 
+    // $hashed_password = password_hash($plain_password, PASSWORD_DEFAULT);
+
+    //echo "Hashed Password: " . $hashed_password;
+    // exit;
+
+
+
+        if(password_verify($password,$user['password'])){
+            $_SESSION['user_id'] = $user['user_id'];
+            $_SESSION['user_name'] = $user['user_name'];
+            $_SESSION['user_type_id'] = $user['user_type_id'];
+
+            // var_dump($_SESSION);
+            // echo "anbcd";
+            // // Debug session data
+            // exit();
+            echo 'correct';
+
+            
+            header("Location: dashboard.php");
+            // echo "pytr";
+            exit();
+        }else{
+            echo 'incorrect';
+            $error="Invalid password";
+            
+            exit();
+        }
+    }else{
+        $error = "User not found";
+    
+        exit();
+    }    
 }
+pg_close($conn);
 ?>
 
 
@@ -38,8 +84,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <div class="card-body">
                     <form action="login.php" method="POST">
                         <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            <input type="email" name="employee_email" class="form-control" required>
+                            <label class="form-label">Username</label>
+                            <input type="text" name="user_name" class="form-control" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Password</label>
